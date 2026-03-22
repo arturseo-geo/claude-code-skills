@@ -1,0 +1,7 @@
+.DS_Store
+*.skill
+node_modules/
+.env
+__pycache__/
+*.pyc
+.git/

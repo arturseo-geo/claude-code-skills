@@ -1,0 +1,21 @@
+{
+  "name": "seo-geo-skill",
+  "displayName": "SEO & GEO Intelligence",
+  "description": "Complete SEO and GEO (Generative Engine Optimisation) skill by The GeoLab (thegeolab.net). Covers keyword research (Google/YouTube autocomplete, GSC, AI clustering), SERP analysis via Serper.dev API, technical audits (sitemap crawl, schema validation, Core Web Vitals), free backlink intelligence via Common Crawl, content gap analysis, AI Overview tracking, and a consolidated failure registry from building 4 production SEO tools. Google SERP scraping is dead — Serper API only. DataForSEO backlinks require $100/month — Common Crawl is free. Groq (llama-3.1-8b) for AI clustering and audit fixes.",
+  "version": "1.0.0",
+  "author": "Artur Ferreira",
+  "github": "https://github.com/arturseo-geo",
+  "homepage": "https://thegeolab.net",
+  "twitter": "https://x.com/TheGEO_Lab",
+  "linkedin": "https://linkedin.com/in/arturgeo",
+  "reddit": "https://www.reddit.com/user/Alternative_Teach_74/",
+  "repository": "https://github.com/arturseo-geo/seo-geo-skill",
+  "licence": "MIT",
+  "plugins": [
+    {
+      "name": "seo-geo-skill",
+      "path": ".",
+      "description": "SEO and GEO intelligence skill — keyword research, SERP analysis, technical audits, backlink intelligence, AI visibility monitoring. Built by Artur Ferreira @ The GeoLab (thegeolab.net)."
+    }
+  ]
+}
