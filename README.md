@@ -20,7 +20,7 @@
 | **seo-geo** | Complete SEO and GEO (Generative Engine Optimization) — keyword research, SERP analysis, technical audits, content optimization, backlink strategy |
 | **token-optimizer** | Reduce Claude Code token consumption and API costs without sacrificing output quality |
 | **vps-ubuntu** | Manage, secure, monitor, and maintain Ubuntu VPS servers |
-| **wordpress** | Publish, manage, and optimize WordPress content via the REST API — posts, pages, media, Gutenberg blocks, WooCommerce |
+| **wordpress** | Publish, manage, and optimize WordPress content via the REST API — posts, pages, media, Gutenberg blocks, WooCommerce, SEO, performance |
 
 ## Installation
 
@@ -44,6 +44,7 @@ Skills auto-trigger based on conversation context — no manual activation neede
 
 - [ebook-publishing-skill](https://github.com/arturseo-geo/ebook-publishing-skill) — The standalone ebook-publishing skill with full changelog, issue templates, and detailed platform docs. The version in this collection is synced from that repo.
 - [seo-geo-skill](https://github.com/arturseo-geo/seo-geo-skill) — The standalone SEO/GEO skill repo.
+- [wordpress-skill](https://github.com/arturseo-geo/wordpress-skill) — The standalone WordPress skill with REST API, Gutenberg, SEO, WooCommerce, and performance references.
 - [mcp-wordpress-setup](https://github.com/arturseo-geo/mcp-wordpress-setup) — WordPress MCP server setup guide for Claude Code (companion repo).
 
 ## Acknowledgments
