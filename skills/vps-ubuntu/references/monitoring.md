@@ -227,22 +227,215 @@ logrotate -f /etc/logrotate.conf       # force immediate rotation
 
 ---
 
+## Alerting — Email, Slack, and Webhook Notifications
+
+### Email Alerts with msmtp (lightweight SMTP relay)
+```bash
+apt install msmtp msmtp-mta -y
+
+# Configure /etc/msmtprc
+cat > /etc/msmtprc << 'EOF'
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        /var/log/msmtp.log
+
+account        default
+host           smtp.gmail.com
+port           587
+from           alerts@yourdomain.com
+user           alerts@yourdomain.com
+password       your-app-password
+EOF
+chmod 600 /etc/msmtprc
+
+# Test
+echo "Test alert from $(hostname)" | mail -s "Test Alert" you@example.com
+```
+
+### Slack Webhook Alerts
+```bash
+#!/bin/bash
+# /usr/local/bin/slack-alert.sh
+# Usage: slack-alert.sh "Alert message here"
+
+WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+HOSTNAME=$(hostname)
+MESSAGE="${1:-No message provided}"
+
+curl -s -X POST "$WEBHOOK_URL" \
+  -H 'Content-type: application/json' \
+  -d "{
+    \"text\": \"*[$HOSTNAME]* $MESSAGE\",
+    \"username\": \"VPS Alert\",
+    \"icon_emoji\": \":warning:\"
+  }"
+```
+
+### Telegram Bot Alerts
+```bash
+#!/bin/bash
+# /usr/local/bin/telegram-alert.sh
+# Usage: telegram-alert.sh "Alert message here"
+
+BOT_TOKEN="YOUR_BOT_TOKEN"
+CHAT_ID="YOUR_CHAT_ID"
+MESSAGE="[$(hostname)] ${1:-No message provided}"
+
+curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+  -d "chat_id=${CHAT_ID}" \
+  -d "text=${MESSAGE}" \
+  -d "parse_mode=Markdown"
+```
+
+### Generic Webhook Alert
+```bash
+#!/bin/bash
+# /usr/local/bin/webhook-alert.sh
+# Works with Ntfy, Gotify, Pushover, Discord, etc.
+
+WEBHOOK_URL="${WEBHOOK_URL:-https://ntfy.sh/your-topic}"
+MESSAGE="${1:-Alert from $(hostname)}"
+
+curl -s -X POST "$WEBHOOK_URL" \
+  -H "Title: VPS Alert" \
+  -H "Priority: high" \
+  -d "$MESSAGE"
+```
+
+---
+
+## Health Check Endpoints
+
+### HTTP Health Check Script
+Create an endpoint for uptime monitoring services (UptimeRobot, Hetrix, etc.):
+
+```bash
+#!/bin/bash
+# /usr/local/bin/health-endpoint.sh
+# Serve via Nginx or run as a simple Python HTTP check
+
+# Check all critical services
+HEALTHY=true
+CHECKS=""
+
+# Nginx running
+if ! systemctl is-active --quiet nginx; then
+  HEALTHY=false
+  CHECKS="$CHECKS nginx:DOWN"
+else
+  CHECKS="$CHECKS nginx:OK"
+fi
+
+# Database accessible
+if ! pg_isready -q 2>/dev/null && ! mysqladmin ping -s 2>/dev/null; then
+  HEALTHY=false
+  CHECKS="$CHECKS db:DOWN"
+else
+  CHECKS="$CHECKS db:OK"
+fi
+
+# Disk not full (>95%)
+DISK_USAGE=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
+if [ "$DISK_USAGE" -gt 95 ]; then
+  HEALTHY=false
+  CHECKS="$CHECKS disk:CRITICAL(${DISK_USAGE}%)"
+else
+  CHECKS="$CHECKS disk:OK(${DISK_USAGE}%)"
+fi
+
+# Memory not exhausted (>95%)
+MEM_USAGE=$(free | awk '/^Mem:/ {printf "%.0f", $3/$2*100}')
+if [ "$MEM_USAGE" -gt 95 ]; then
+  HEALTHY=false
+  CHECKS="$CHECKS mem:CRITICAL(${MEM_USAGE}%)"
+else
+  CHECKS="$CHECKS mem:OK(${MEM_USAGE}%)"
+fi
+
+if [ "$HEALTHY" = true ]; then
+  echo "OK |$CHECKS"
+  exit 0
+else
+  echo "UNHEALTHY |$CHECKS"
+  exit 1
+fi
+```
+
+### Nginx Health Check Location
+```nginx
+# Add to your Nginx server block
+location /health {
+    access_log off;
+    allow 127.0.0.1;          # restrict to localhost
+    allow 100.0.0.0/8;        # allow Tailscale
+    deny all;
+    default_type text/plain;
+    return 200 "OK\n";
+}
+
+# Or proxy to health check script
+location /health {
+    access_log off;
+    content_by_lua_block {
+        local handle = io.popen("/usr/local/bin/health-endpoint.sh")
+        local result = handle:read("*a")
+        handle:close()
+        ngx.say(result)
+    }
+}
+```
+
+---
+
 ## Monitoring Stack Options
 
 ### Lightweight (single VPS)
 - **Netdata** — beautiful real-time dashboard, zero config: `bash <(curl -Ss https://my-netdata.io/kickstart.sh)`
 - **Glances** — terminal dashboard: `apt install glances -y && glances`
 - **logwatch** — daily email digest (see above)
+- **Monit** — process supervisor with built-in alerts
+
+### Monit — Process Monitoring with Auto-Restart
+```bash
+apt install monit -y
+
+# Configure /etc/monit/conf.d/myapp
+check process nginx with pidfile /var/run/nginx.pid
+  start program = "/bin/systemctl start nginx"
+  stop program = "/bin/systemctl stop nginx"
+  if failed host 127.0.0.1 port 80 protocol http then restart
+  if 5 restarts within 5 cycles then alert
+
+check system $HOST
+  if loadavg (5min) > 4 then alert
+  if memory usage > 90% then alert
+  if cpu usage > 95% for 10 cycles then alert
+
+set mailserver smtp.gmail.com port 587
+  username "alerts@yourdomain.com" password "app-password"
+  using tls
+set alert you@example.com
+
+# Enable web interface (optional)
+set httpd port 2812
+  allow admin:secret
+
+systemctl enable --now monit
+monit status              # check all monitored services
+monit summary             # brief overview
+```
 
 ### Custom Alert Script
 `/usr/local/bin/health-check.sh` — run every 5 min via cron:
 ```bash
 #!/bin/bash
-EMAIL="you@example.com"
+ALERT_CMD="/usr/local/bin/slack-alert.sh"  # or telegram-alert.sh, or mail
 HOST=$(hostname)
 ALERTS=""
 
-# CPU load > 4 on 4-core server
+# CPU load > number of cores
 LOAD=$(cat /proc/loadavg | awk '{print $1}')
 CORES=$(nproc)
 if (( $(echo "$LOAD > $CORES" | bc -l) )); then
@@ -264,9 +457,16 @@ while read -r line; do
   fi
 done < <(df -h | grep -vE '^Filesystem|tmpfs')
 
+# Check critical services
+for SVC in nginx ssh; do
+  if ! systemctl is-active --quiet "$SVC"; then
+    ALERTS="${ALERTS}SERVICE DOWN: $SVC\n"
+  fi
+done
+
 # Send alert if anything triggered
 if [ -n "$ALERTS" ]; then
-  echo -e "$ALERTS" | mail -s "⚠️ Server Alert: $HOST" $EMAIL
+  $ALERT_CMD "$(echo -e "$ALERTS")"
 fi
 ```
 

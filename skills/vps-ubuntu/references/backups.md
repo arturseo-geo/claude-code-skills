@@ -105,6 +105,9 @@ borg prune \
   --keep-monthly 6 \
   ::
 
+# Compact freed space (Borg 1.2+)
+borg compact ::
+
 # Verify integrity
 borg check ::
 ```
@@ -159,26 +162,98 @@ psql DATABASE_NAME < /backups/db/db_20260320.sql
 pg_restore -d DATABASE_NAME /backups/db/db_20260320.dump
 ```
 
----
-
-## Upload Backups to Cloud (Offsite)
-
-### Backblaze B2 / AWS S3 with rclone
+### SQLite
 ```bash
-apt install rclone -y
-rclone config    # interactive setup for B2/S3
+# Safe backup (uses SQLite's backup API — safe even during writes)
+sqlite3 /path/to/database.db ".backup /backups/db/sqlite_$(date +%Y%m%d).db"
 
-# Upload backup
-rclone copy /backups/db/ b2:your-bucket/db-backups/ --progress
-
-# Sync (mirror)
-rclone sync /backups/ b2:your-bucket/vps-backups/ --progress
-
-# Verify
-rclone check /backups/ b2:your-bucket/vps-backups/
+# Or with compression
+sqlite3 /path/to/database.db ".dump" | gzip > /backups/db/sqlite_$(date +%Y%m%d).sql.gz
 ```
 
-### AWS CLI (S3)
+---
+
+## rclone — Cloud Sync (S3, B2, Google Drive, and more)
+
+### Install & Configure
+```bash
+# Install latest rclone
+curl https://rclone.org/install.sh | bash
+
+# Interactive setup for a remote
+rclone config
+# Follow prompts — supports 40+ cloud providers:
+# - AWS S3, Backblaze B2, Google Drive, Google Cloud Storage
+# - DigitalOcean Spaces, Wasabi, Cloudflare R2
+# - SFTP, OneDrive, Dropbox
+```
+
+### rclone to Backblaze B2
+```bash
+# Upload backup directory
+rclone copy /backups/db/ b2:your-bucket/db-backups/ --progress
+
+# Sync (mirror — deletes files on remote not present locally)
+rclone sync /backups/ b2:your-bucket/vps-backups/ --progress
+
+# Verify files match
+rclone check /backups/ b2:your-bucket/vps-backups/
+
+# List remote contents
+rclone ls b2:your-bucket/vps-backups/
+rclone size b2:your-bucket/vps-backups/
+```
+
+### rclone to AWS S3
+```bash
+# Upload with server-side encryption
+rclone copy /backups/db/ s3:your-bucket/db-backups/ \
+  --s3-server-side-encryption AES256 --progress
+
+# Sync with storage class
+rclone sync /backups/ s3:your-bucket/vps-backups/ \
+  --s3-storage-class STANDARD_IA --progress
+
+# Upload single file
+rclone copyto /backups/db/db_$(date +%Y%m%d).sql.gz s3:your-bucket/db/latest.sql.gz
+```
+
+### rclone to Google Drive
+```bash
+# After rclone config creates a "gdrive" remote:
+rclone copy /backups/ gdrive:VPS-Backups/ --progress
+
+# Sync specific folder
+rclone sync /backups/db/ gdrive:VPS-Backups/db/ --progress
+
+# Note: Google Drive uses OAuth tokens — for headless VPS:
+# 1. Run "rclone authorize gdrive" on a machine with a browser
+# 2. Copy the token JSON to the VPS rclone config
+```
+
+### rclone to Cloudflare R2 (S3-compatible, no egress fees)
+```bash
+# Configure as S3-compatible endpoint
+# Provider: Cloudflare R2
+# Endpoint: https://<account-id>.r2.cloudflarestorage.com
+# Access key and secret from Cloudflare dashboard
+
+rclone sync /backups/ r2:your-bucket/vps-backups/ --progress
+```
+
+### rclone Encryption (encrypt before upload)
+```bash
+# Create an encrypted remote wrapping another remote
+# During "rclone config":
+# Type: crypt
+# Remote: b2:your-bucket/encrypted-backups
+# Password: <strong passphrase>
+
+rclone sync /backups/ crypt-remote: --progress
+# Files are encrypted client-side before upload
+```
+
+### AWS CLI (S3) — alternative to rclone
 ```bash
 aws s3 sync /backups/ s3://your-bucket/vps-backups/ --delete
 aws s3 cp /backups/db/db_$(date +%Y%m%d).sql.gz s3://your-bucket/db/
@@ -200,6 +275,9 @@ crontab -e -u root
 
 # Weekly offsite sync at 4am on Sundays
 0 4 * * 0 rclone sync /backups/ b2:your-bucket/ >> /var/log/rclone.log 2>&1
+
+# Monthly backup verification (1st of month at 5am)
+0 5 1 * * /usr/local/bin/backup-verify.sh >> /var/log/backup-verify.log 2>&1
 ```
 
 ---
@@ -207,18 +285,88 @@ crontab -e -u root
 ## Backup Verification (Critical — Do This Monthly)
 
 Never trust a backup you haven't restored:
+
+### Database Restore Test
 ```bash
-# Test restore DB to a temp database
+# MySQL — test restore to a temp database
 mysql -u root -p -e "CREATE DATABASE test_restore;"
 mysql -u root -p test_restore < /backups/db/db_latest.sql
 mysql -u root -p test_restore -e "SHOW TABLES;"  # verify tables exist
 mysql -u root -p -e "DROP DATABASE test_restore;"
 
-# Verify borg backup integrity
+# PostgreSQL — test restore
+createdb test_restore
+pg_restore -d test_restore /backups/db/db_latest.dump
+psql test_restore -c "\dt"   # verify tables
+dropdb test_restore
+```
+
+### Borg Integrity Check
+```bash
 export BORG_PASSPHRASE='your-passphrase'
 borg check --verbose user@backup-server:/backups/borg-repo
 
+# List and verify latest archive
+borg list :: | tail -5
+borg info ::$(borg list --short :: | tail -1)
+```
+
+### File Backup Verification
+```bash
 # Check backup file sizes (zero = failed backup)
 ls -lh /backups/db/
 find /backups/ -name "*.sql.gz" -size 0 -exec echo "EMPTY BACKUP: {}" \;
+
+# Verify rclone remote matches local
+rclone check /backups/ b2:your-bucket/vps-backups/ --one-way
+```
+
+### Automated Verification Script
+```bash
+#!/bin/bash
+# /usr/local/bin/backup-verify.sh
+set -euo pipefail
+LOG="/var/log/backup-verify.log"
+exec >> "$LOG" 2>&1
+echo "=== $(date '+%Y-%m-%d %H:%M:%S') BACKUP VERIFICATION ==="
+
+ERRORS=0
+
+# Check latest backup file exists and is non-empty
+LATEST=$(ls -t /backups/db/*.sql.gz 2>/dev/null | head -1)
+if [ -z "$LATEST" ]; then
+  echo "ERROR: No backup files found"
+  ERRORS=$((ERRORS + 1))
+elif [ ! -s "$LATEST" ]; then
+  echo "ERROR: Latest backup is empty: $LATEST"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "OK: Latest backup: $LATEST ($(ls -lh "$LATEST" | awk '{print $5}'))"
+fi
+
+# Check backup age (alert if older than 48 hours)
+if [ -n "$LATEST" ]; then
+  AGE=$(( ($(date +%s) - $(stat -c %Y "$LATEST")) / 3600 ))
+  if [ "$AGE" -gt 48 ]; then
+    echo "ERROR: Latest backup is ${AGE}h old (>48h)"
+    ERRORS=$((ERRORS + 1))
+  else
+    echo "OK: Backup age: ${AGE}h"
+  fi
+fi
+
+# Check borg repo (if configured)
+if [ -n "${BORG_REPO:-}" ]; then
+  if borg check :: 2>&1; then
+    echo "OK: Borg repo integrity check passed"
+  else
+    echo "ERROR: Borg repo integrity check failed"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+echo "Verification complete: $ERRORS errors"
+if [ "$ERRORS" -gt 0 ]; then
+  echo "BACKUP VERIFICATION FAILED" | mail -s "BACKUP ALERT: $(hostname)" you@example.com
+fi
 ```

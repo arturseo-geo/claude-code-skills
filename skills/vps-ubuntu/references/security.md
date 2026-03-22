@@ -5,7 +5,7 @@
 Edit `/etc/ssh/sshd_config`:
 ```bash
 # Disable root login
-PermitRootLogin no
+ PermitRootLogin no
 
 # Disable password auth (use keys only)
 PasswordAuthentication no
@@ -13,7 +13,7 @@ PubkeyAuthentication yes
 AuthorizedKeysFile .ssh/authorized_keys
 
 # Disable unused auth methods
-PermitEmptyPasswords no
+ PermitEmptyPasswords no
 ChallengeResponseAuthentication no
 UsePAM yes
 
@@ -34,10 +34,11 @@ ClientAliveCountMax 3
 # Disable X11 forwarding (unless needed)
 X11Forwarding no
 
-# Use strong algorithms only
-KexAlgorithms curve25519-sha256,diffie-hellman-group-exchange-sha256
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
+# Use strong algorithms only (2026 recommendations)
+KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,diffie-hellman-group-exchange-sha256
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
 MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
 ```
 
 **Always test before restarting:**
@@ -48,7 +49,7 @@ systemctl reload ssh            # reload (safer than restart)
 
 ### Add SSH Key for a New User
 ```bash
-# On LOCAL machine — generate key
+# On LOCAL machine — generate key (Ed25519 preferred over RSA)
 ssh-keygen -t ed25519 -C "server-name-2026"
 
 # Copy public key to server
@@ -56,6 +57,21 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server
 
 # Or manually
 cat ~/.ssh/id_ed25519.pub | ssh user@server "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
+```
+
+### SSH Key Rotation
+```bash
+# Generate new key pair
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_new -C "rotated-$(date +%Y%m)"
+
+# Add new key to server
+ssh-copy-id -i ~/.ssh/id_ed25519_new.pub user@server
+
+# Test new key works
+ssh -i ~/.ssh/id_ed25519_new user@server "echo 'New key works'"
+
+# Remove old key from server's authorized_keys
+ssh user@server "sed -i '/old-key-comment/d' ~/.ssh/authorized_keys"
 ```
 
 ---
@@ -83,6 +99,9 @@ lastb | head -20                # failed login attempts
 # Lock a compromised account
 passwd -l username
 usermod --expiredate 1 username # disable account
+
+# Audit all user accounts with login shells
+awk -F: '$7 !~ /(nologin|false)/ {print $1, $7}' /etc/passwd
 ```
 
 ---
@@ -163,6 +182,12 @@ kernel.dmesg_restrict = 1
 
 # Prevent core dumps leaking sensitive info
 fs.suid_dumpable = 0
+
+# Restrict ptrace (prevent process snooping)
+kernel.yama.ptrace_scope = 2
+
+# Restrict unprivileged user namespaces (mitigates container escape vectors)
+kernel.unprivileged_userns_clone = 0
 ```
 
 ```bash
@@ -184,6 +209,29 @@ rkhunter --check --skip-keypress --report-warnings-only
 echo "0 3 * * * root rkhunter --check --skip-keypress --report-warnings-only 2>&1 | mail -s 'rkhunter report' you@example.com" > /etc/cron.d/rkhunter
 ```
 
+#### rkhunter Configuration
+Edit `/etc/rkhunter.conf` for common tuning:
+```bash
+# Reduce false positives after package updates
+PKGMGR=DPKG
+UPDATE_MIRRORS=1
+MIRRORS_MODE=0
+WEB_CMD=""
+
+# Whitelist known safe items (adjust per server)
+ALLOWHIDDENDIR=/etc/.java
+ALLOW_SSH_ROOT_USER=no
+ALLOW_SSH_PROT_V1=0
+```
+
+```bash
+# Update baseline after system changes (apt upgrade, new packages)
+rkhunter --propupd
+
+# View detailed report
+cat /var/log/rkhunter.log | grep Warning
+```
+
 ### chkrootkit
 ```bash
 apt install chkrootkit -y
@@ -191,6 +239,10 @@ chkrootkit
 
 # Run weekly
 echo "0 4 * * 0 root chkrootkit 2>&1 | mail -s 'chkrootkit report' you@example.com" > /etc/cron.d/chkrootkit
+
+# Common false positives — check these manually if flagged
+# - Suckit rootkit: often false positive on modern kernels
+# - Hidden processes: can be transient kernel threads
 ```
 
 ### ClamAV (Antivirus)
@@ -203,8 +255,39 @@ systemctl start clamav-freshclam
 # Scan a directory
 clamscan -r /home --infected --remove
 
+# Scan with logging and summary
+clamscan -r /var/www --infected --log=/var/log/clamav/scan.log --exclude-dir=/var/www/.git
+
 # Schedule weekly scan
-echo "0 2 * * 0 root clamscan -r /var/www --infected --log=/var/log/clamav/scan.log" > /etc/cron.d/clamav
+echo "0 2 * * 0 root clamscan -r /var/www /home --infected --log=/var/log/clamav/weekly-scan.log 2>&1" > /etc/cron.d/clamav
+```
+
+#### ClamAV On-Access Scanning (real-time file monitoring)
+```bash
+# Enable the clamonacc daemon for real-time scanning
+cat >> /etc/clamav/clamd.conf << EOF
+OnAccessIncludePath /var/www
+OnAccessIncludePath /home
+OnAccessExcludeUname clamav
+OnAccessPrevention yes
+EOF
+
+systemctl restart clamav-daemon
+clamonacc                   # start on-access scanner
+```
+
+#### ClamAV Signature Management
+```bash
+# Check signature freshness
+sigtool --info /var/lib/clamav/daily.cvd
+
+# Force update
+systemctl stop clamav-freshclam
+freshclam --verbose
+systemctl start clamav-freshclam
+
+# Add custom signatures (e.g., for web shells)
+# Place .ndb or .ldb files in /var/lib/clamav/
 ```
 
 ### auditd (System Call Auditing)
@@ -214,14 +297,42 @@ systemctl enable --now auditd
 
 # Watch file changes (detect tampering)
 auditctl -w /etc/passwd -p wa -k passwd_changes
+auditctl -w /etc/shadow -p wa -k shadow_changes
 auditctl -w /etc/ssh/sshd_config -p wa -k sshd_config
 auditctl -w /etc/sudoers -p wa -k sudoers
+auditctl -w /etc/crontab -p wa -k crontab_changes
+
+# Monitor command execution by non-root users
+auditctl -a always,exit -F arch=b64 -S execve -F uid!=0 -k user_commands
+
+# Monitor network connections
+auditctl -a always,exit -F arch=b64 -S connect -S accept -k network_connections
 
 # View audit log
 ausearch -k passwd_changes
+ausearch -k user_commands --start today
 aureport --summary
+aureport --auth             # authentication report
+aureport --login            # login attempts
+aureport --file --summary   # file access summary
 
 # Make rules persistent: /etc/audit/rules.d/audit.rules
+# Copy current rules
+auditctl -l > /etc/audit/rules.d/audit.rules
+```
+
+#### auditd Log Management
+```bash
+# Configure log rotation in /etc/audit/auditd.conf
+max_log_file = 50           # MB per log file
+num_logs = 10               # number of rotated logs
+max_log_file_action = ROTATE
+
+# Search audit logs by time range
+ausearch --start '03/20/2026' '00:00:00' --end '03/21/2026' '23:59:59'
+
+# Generate comprehensive daily report
+aureport --start today --summary
 ```
 
 ---
@@ -248,6 +359,25 @@ chmod 600 ~/.ssh/id_*
 chmod 644 ~/.ssh/*.pub
 ```
 
+### AIDE (Advanced Intrusion Detection Environment)
+```bash
+apt install aide -y
+
+# Initialize database (takes a while — baseline of all files)
+aideinit
+cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+
+# Check for changes
+aide --check
+
+# Update database after legitimate changes
+aide --update
+cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+
+# Schedule daily integrity check
+echo "0 5 * * * root aide --check 2>&1 | mail -s 'AIDE report' you@example.com" > /etc/cron.d/aide
+```
+
 ---
 
 ## Security Audit Checklist
@@ -259,7 +389,12 @@ Run monthly or after any incident:
 - [ ] `grep "Failed password" /var/log/auth.log | wc -l` — brute force activity?
 - [ ] `apt list --upgradable` — security patches pending?
 - [ ] `rkhunter --check` — clean?
+- [ ] `chkrootkit` — clean?
+- [ ] `clamscan -r /var/www --infected` — no malware?
+- [ ] `aureport --auth --summary` — audit log reviewed?
 - [ ] `systemctl list-units --failed` — any crashed services?
 - [ ] `ls -la /root/.ssh/authorized_keys` — only expected keys?
 - [ ] `cat /etc/passwd | grep -v nologin | grep -v false` — unexpected login shells?
 - [ ] SSL cert expiry: `certbot certificates`
+- [ ] Docker images: `docker images --filter "dangling=true"` — stale images?
+- [ ] Open ports: `ss -tulpn` — any unexpected listeners?

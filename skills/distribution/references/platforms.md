@@ -45,3 +45,17 @@
 - **Keywords**: 7 fields, 50 chars each, long-tail phrases only
 - **Categories**: 2 during upload, up to 10 via Author Central support
 - **MCP**: None available
+
+## Google Play Books
+- **URL**: play.google.com/books/publish
+- **Description**: Plain text, up to 4,000 characters
+- **Rules**: No links, no promotional language
+- **Royalty**: 52% standard, 70% partner program (invite only)
+- **Free**: Supported (list at $0 directly)
+- **Review time**: Up to 48 hours
+- **Cover minimum**: 1280x1920px (1600x2400 recommended)
+- **Categories**: Google-specific taxonomy (similar to BISAC)
+- **ISBN**: Optional
+- **Payout**: Monthly, $1 minimum threshold
+- **DRM**: Optional
+- **MCP**: None available
