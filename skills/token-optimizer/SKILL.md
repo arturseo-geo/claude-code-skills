@@ -307,6 +307,128 @@ See `references/cost-tracking.md` for project-level tracking and budget alerts.
 
 ---
 
+## Groq Offloading — Free/Near-Free Processing
+
+Groq provides **free-tier access** to Llama 3.1 8B and other open models with
+extremely fast inference. Offload bulk processing tasks to Groq to avoid burning
+Anthropic tokens entirely.
+
+### When to offload to Groq
+
+| Task | Groq model | Why not Claude |
+|---|---|---|
+| Keyword clustering | llama-3.1-8b | Bulk classification, no reasoning needed |
+| Text summarisation (bulk) | llama-3.1-8b | Summarise 100 articles = massive token cost on Claude |
+| JSON/data transformation | llama-3.1-8b | Reformatting, no intelligence needed |
+| Memory compaction/scoring | llama-3.1-8b | Score 500 memories offline, feed top-N to Claude |
+| Content tagging/classification | llama-3.1-8b | Label 200 posts by category |
+| Embeddings generation | — | Use dedicated embedding APIs instead |
+| SEO meta description generation (bulk) | llama-3.1-70b | Higher quality for content, still free tier |
+| Draft generation for review | llama-3.1-70b | Generate drafts on Groq, review/polish on Claude |
+
+### Groq integration pattern
+
+```python
+import os
+from groq import Groq
+
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+def offload_to_groq(prompt: str, model: str = "llama-3.1-8b-instant") -> str:
+    """Offload a task to Groq's free tier instead of using Claude tokens."""
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.1,
+        max_tokens=2048
+    )
+    return response.choices[0].message.content
+
+# Example: bulk classify 100 items for $0 instead of $2+ on Claude
+categories = []
+for item in items:
+    cat = offload_to_groq(f"Classify this into one category (tech/business/science): {item['title']}")
+    categories.append(cat)
+```
+
+### Groq free tier limits (2026)
+- **llama-3.1-8b-instant**: 30 RPM, 14,400 requests/day, 131,072 tokens/min
+- **llama-3.1-70b-versatile**: 30 RPM, 14,400 requests/day, 131,072 tokens/min
+- **No cost** — completely free for these limits
+- Rate limited, not usage limited — spread requests over time for bulk work
+
+### Cost comparison: Claude vs Groq offloading
+
+| Task (100 items) | Claude Sonnet cost | Groq cost | Savings |
+|---|---|---|---|
+| Classify 100 articles | ~$0.60 | $0.00 | 100% |
+| Summarise 100 pages | ~$3.00 | $0.00 | 100% |
+| Generate 100 meta descriptions | ~$1.50 | $0.00 | 100% |
+| Score 500 memories | ~$2.00 | $0.00 | 100% |
+| Cluster 200 keywords | ~$1.00 | $0.00 | 100% |
+
+### Setup
+```bash
+# Get free API key at console.groq.com
+pip install groq
+
+# Add to environment
+export GROQ_API_KEY="gsk_..."
+```
+
+See `references/groq-offloading.md` for complete integration patterns and batch scripts.
+
+---
+
+## Haiku as Default — The 80/20 Rule
+
+Most Claude Code users leave the model on Opus or Sonnet for everything.
+**Switch the default to Haiku** and escalate only when needed:
+
+### Haiku-first workflow
+```
+1. Start session on Haiku (/model haiku)
+2. Do file reading, search, simple edits, boilerplate — Haiku handles all of this
+3. Hit a complex problem? /model sonnet — solve it
+4. Back to routine work? /model haiku
+5. Stuck on architecture? /model opus — for that one decision
+6. Back to /model haiku for implementation
+```
+
+### What Haiku handles well (at 4% of Opus cost)
+- Reading and summarising files
+- Simple code edits (rename, add parameter, fix typo)
+- Running grep/search and reporting results
+- Generating boilerplate (tests, interfaces, types)
+- Formatting and linting fixes
+- Git operations (commit messages, status checks)
+- Simple Q&A about code
+
+### What needs escalation
+- Multi-file refactors touching complex logic → Sonnet
+- Architectural decisions → Opus
+- Debugging subtle race conditions → Opus
+- Security review → Opus
+- Ambiguous requirements → Sonnet or Opus
+
+### Combined Haiku + Groq strategy
+
+For maximum savings, split work three ways:
+
+| Work type | Route to | Cost |
+|---|---|---|
+| Bulk processing (classify, summarise, tag) | **Groq** (free) | $0.00 |
+| Routine Claude Code work (read, edit, search) | **Haiku** | ~$0.001/task |
+| Standard development (features, tests, reviews) | **Sonnet** | ~$0.01-0.10/task |
+| Complex reasoning (architecture, debugging) | **Opus** | ~$0.10-1.00/task |
+
+**Realistic daily cost** with this routing:
+- Before: $15-20/day (Opus/Sonnet for everything)
+- After: $3-8/day (Groq + Haiku + Sonnet, Opus only when stuck)
+- **Savings: 50-80%**
+
+---
+
 ## Cost Estimation Quick Reference
 
 Approximate token costs per action (Sonnet pricing as baseline):

@@ -389,6 +389,187 @@ Surviving context compaction?      -> Write to disk early and often
 
 ---
 
+## Pattern 7: Groq-Powered Memory Processing (Zero Claude Token Cost)
+
+Use Groq's free tier to handle memory operations that would otherwise consume
+Claude tokens: scoring, compaction, summarisation, and relevance ranking.
+
+### Why offload memory ops to Groq?
+Memory operations are repetitive, low-reasoning tasks — perfect for Llama 3.1 8B.
+Scoring 500 memories on Claude Sonnet costs ~$2. On Groq: **$0**.
+
+### Groq setup
+```bash
+pip install groq
+export GROQ_API_KEY="gsk_..."  # Free at console.groq.com
+```
+
+### Memory scoring with Groq
+
+Instead of loading all memories into Claude's context, score them on Groq first
+and feed only the top-N:
+
+```python
+import os, json, time
+from groq import Groq
+
+groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
+
+def score_memories_groq(memories: list[dict], context: str,
+                        top_n: int = 20) -> list[dict]:
+    """Score memory relevance using Groq free tier, return top-N."""
+    scored = []
+    batch_size = 15  # Send 15 per request to reduce RPM usage
+
+    for i in range(0, len(memories), batch_size):
+        batch = memories[i:i+batch_size]
+        batch_text = "\n".join([
+            f"{j+1}. [{m['type']}] {m['key']}: {m['value']}"
+            for j, m in enumerate(batch)
+        ])
+
+        resp = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{
+                "role": "user",
+                "content": f"""Rate each memory's relevance to this context (0.0-1.0).
+Return ONLY a JSON array of numbers.
+
+Context: {context}
+
+Memories:
+{batch_text}
+
+Scores:"""
+            }],
+            temperature=0,
+            max_tokens=200
+        )
+
+        try:
+            scores = json.loads(resp.choices[0].message.content)
+            if isinstance(scores, dict):
+                scores = list(scores.values())[0]
+            for m, s in zip(batch, scores):
+                scored.append((m, float(s)))
+        except:
+            for m in batch:
+                scored.append((m, 0.5))
+
+        time.sleep(2)  # Respect 30 RPM limit
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [m for m, s in scored[:top_n]]
+
+# Usage: score 500 memories for free, feed top 20 to Claude
+all_memories = load_memories(".claude/memory.jsonl")
+relevant = score_memories_groq(all_memories, "debugging auth webhook")
+# Now pass only 20 memories to Claude instead of 500
+```
+
+### Memory summarisation with Groq
+
+Compress old memories into summaries to reduce JSONL file size:
+
+```python
+def summarise_old_memories_groq(memories: list[dict],
+                                 group_size: int = 20) -> list[str]:
+    """Summarise groups of old memories into compact paragraphs."""
+    summaries = []
+    for i in range(0, len(memories), group_size):
+        group = memories[i:i+group_size]
+        group_text = "\n".join([
+            f"- [{m['type']}] {m['key']}: {m['value']}"
+            for m in group
+        ])
+
+        resp = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{
+                "role": "user",
+                "content": f"Summarise these memories into 3-5 bullet points, preserving the most important facts:\n\n{group_text}"
+            }],
+            temperature=0.1,
+            max_tokens=300
+        )
+        summaries.append(resp.choices[0].message.content.strip())
+        time.sleep(2)
+    return summaries
+```
+
+### Memory deduplication with Groq
+
+Find and merge duplicate memories without burning Claude tokens:
+
+```python
+def find_duplicates_groq(memories: list[dict]) -> list[list[int]]:
+    """Identify duplicate/near-duplicate memories using Groq."""
+    batch_text = "\n".join([
+        f"{i+1}. [{m['type']}] {m['key']}: {m['value']}"
+        for i, m in enumerate(memories)
+    ])
+
+    resp = groq_client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{
+            "role": "user",
+            "content": f"""Find groups of duplicate or near-duplicate memories.
+Return JSON array of arrays, e.g. [[1,5], [3,7,12]].
+If no duplicates, return [].
+
+Memories:
+{batch_text[:4000]}
+
+Duplicate groups:"""
+        }],
+        temperature=0,
+        max_tokens=500
+    )
+
+    try:
+        return json.loads(resp.choices[0].message.content)
+    except:
+        return []
+```
+
+### Haiku for real-time memory retrieval
+
+For in-session memory operations that need to stay inside Claude Code,
+use Haiku subagents instead of the main model:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
+  }
+}
+```
+
+Then delegate memory tasks to subagents:
+```
+Use a subagent to: read .claude/memory.jsonl, find all memories
+related to "authentication", and return the top 5 most relevant.
+```
+
+Haiku costs 4% of Opus — memory retrieval via subagent is nearly free.
+
+### Combined workflow: Groq + Haiku + Claude
+
+| Memory operation | Route to | Cost |
+|---|---|---|
+| Score 500 memories for relevance | **Groq** | $0.00 |
+| Summarise old memories (bulk) | **Groq** | $0.00 |
+| Find and merge duplicates | **Groq** | $0.00 |
+| Load top-20 into session context | **Haiku** subagent | ~$0.001 |
+| Use memories for reasoning | **Sonnet/Opus** (main) | Normal |
+| Write new memories (Stop hook) | **Haiku** subagent | ~$0.001 |
+
+**Result**: memory operations that cost $2-5/day on Claude now cost <$0.01/day.
+
+See `references/groq-memory.md` for complete integration scripts.
+
+---
+
 ## Anti-Patterns to Avoid
 
 | Anti-pattern | Why it fails | Fix |
