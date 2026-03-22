@@ -40,9 +40,35 @@ Skills auto-trigger based on conversation context — no manual activation neede
 
 - [Claude Code](https://claude.com/claude-code) CLI
 
+## Related Repos
+
+- [ebook-publishing-skill](https://github.com/arturseo-geo/ebook-publishing-skill) — The standalone ebook-publishing skill with full changelog, issue templates, and detailed platform docs. The version in this collection is synced from that repo.
+- [seo-geo-skill](https://github.com/arturseo-geo/seo-geo-skill) — The standalone SEO/GEO skill repo.
+- [mcp-wordpress-setup](https://github.com/arturseo-geo/mcp-wordpress-setup) — WordPress MCP server setup guide for Claude Code (companion repo).
+
+## Acknowledgments
+
+These skills were built following the open-source best practice approach — reading community work for inspiration, writing original content, and crediting every source.
+
+**Based on:**
+- [Agent Skills specification](https://github.com/anthropics/skills) by Anthropic (Apache 2.0)
+
+**Inspired by community repos researched during development:**
+- [`smerchek/claude-epub-skill`](https://github.com/smerchek/claude-epub-skill) — Markdown→EPUB3 conversion with Python (MIT) — pattern used in ebook-publishing
+- [`coreyhaines31/marketingskills`](https://github.com/coreyhaines31/marketingskills) — marketing skill patterns (MIT)
+- [`kostja94/marketing-skills`](https://github.com/kostja94/marketing-skills) — marketing skill structure
+- [`AgriciDaniel/claude-seo`](https://github.com/AgriciDaniel/claude-seo) — SEO skill patterns
+- [`alirezarezvani/claude-skills`](https://github.com/alirezarezvani/claude-skills) — skill structure conventions (MIT)
+- [`wondelai/skills`](https://github.com/wondelai/skills) — skill architecture patterns
+- [`ThomasHoussin/Claude-Book`](https://github.com/ThomasHoussin/Claude-Book) — multi-agent fiction writing with EPUB/MOBI build
+
+All skill content is original writing. No files were copied or adapted from any source.
+
 ## Author
 
-[The GEO Lab](https://thegeolab.net)
+Built and maintained by **[Artur Ferreira](https://github.com/arturseo-geo)** @ **[The GEO Lab](https://thegeolab.net)**
+
+[thegeolab.net](https://thegeolab.net) · [@TheGEO_Lab](https://x.com/TheGEO_Lab) · [LinkedIn](https://linkedin.com/in/arturgeo) · [Reddit](https://www.reddit.com/user/Alternative_Teach_74/)
 
 ## License
 
