@@ -1,76 +1,81 @@
 # Claude Code Skills Collection
 
-[![Works with Claude Code](https://img.shields.io/badge/Works%20with-Claude%20Code-blueviolet)](https://claude.com/claude-code)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+> Built by **[Artur Ferreira](https://github.com/arturseo-geo)** @ **[The GEO Lab](https://thegeolab.net)**
+> [𝕏 @TheGEO_Lab](https://x.com/TheGEO_Lab) · [LinkedIn](https://linkedin.com/in/arturgeo) · [Reddit](https://www.reddit.com/user/Alternative_Teach_74/)
 
-12 production-tested skills for [Claude Code](https://claude.com/claude-code) CLI — covering SEO, marketing, content creation, publishing, and DevOps.
+[![Works with Claude Code](https://img.shields.io/badge/Works%20with-Claude%20Code-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Skills](https://img.shields.io/badge/skills-12-orange)
+
+12 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, and developer productivity. Each skill auto-triggers based on conversation context.
+
+## Who This Is For
+
+- **Claude Code users** who want domain expertise loaded automatically when they need it
+- **Developers** building with Claude Code who want SEO, WordPress, VPS, or agent patterns
+- **Content creators** who want AI-assisted writing, publishing, and distribution workflows
+- **Anyone evaluating Claude Code skills** who wants a comprehensive, well-maintained collection
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| **agents** | Design, build, and debug AI agent systems — multi-step reasoning, tool use, memory, orchestration, and autonomous workflows |
-| **content-creation** | Create high-quality content for blogs, landing pages, email sequences, social media, video scripts, newsletters, and more |
-| **content-pipeline** | Multi-agent content production pipeline — research, write, edit, optimize for SEO/GEO, and validate |
-| **context-engineering** | Manage, optimize, and debug Claude Code context windows and autocompaction |
-| **distribution** | Multi-platform digital product distribution — track accounts, format descriptions, manage cross-links, coordinate publishing |
-| **ebook-publishing** | Complete ebook and audiobook self-publishing — write, format, convert, and publish across all major platforms |
-| **marketing** | Plan, write, and optimize marketing campaigns, funnels, ad copy, personas, positioning, and go-to-market strategy |
-| **memory-persistence** | Implement cross-session memory, persistent agent knowledge, and session continuity for Claude Code |
-| **seo-geo** | Complete SEO and GEO (Generative Engine Optimization) — keyword research, SERP analysis, technical audits, content optimization, backlink strategy |
-| **token-optimizer** | Reduce Claude Code token consumption and API costs without sacrificing output quality |
-| **vps-ubuntu** | Manage, secure, monitor, and maintain Ubuntu VPS servers |
-| **wordpress** | Publish, manage, and optimize WordPress content via the REST API — posts, pages, media, Gutenberg blocks, WooCommerce, SEO, performance |
+| Skill | What it teaches Claude Code | Standalone repo |
+|-------|---------------------------|-----------------|
+| **seo-geo** | Keyword research, SERP analysis, technical audits, backlink intelligence, AI visibility | [seo-geo-skill](https://github.com/arturseo-geo/seo-geo-skill) |
+| **ebook-publishing** | 11 platforms, HTML→PDF Puppeteer workflow, AI audiobooks, ISBN strategy | [ebook-publishing-skill](https://github.com/arturseo-geo/ebook-publishing-skill) |
+| **wordpress** | REST API, Gutenberg, WooCommerce, RankMath/Yoast, multisite, WP-CLI | [wordpress-skill](https://github.com/arturseo-geo/wordpress-skill) |
+| **agents** | ReAct, Plan-and-Execute, MCP, LangGraph, multi-agent orchestration | [agents-skill](https://github.com/arturseo-geo/agents-skill) |
+| **content-pipeline** | 6-agent content production pipeline with quality gates | [content-pipeline-skill](https://github.com/arturseo-geo/content-pipeline-skill) |
+| **content-creation** | Blogs, emails, social media, video scripts, repurposing workflows | [content-creation-skill](https://github.com/arturseo-geo/content-creation-skill) |
+| **marketing** | Campaigns, funnels, ad copy, StoryBrand/$100M Offers frameworks | [marketing-skill](https://github.com/arturseo-geo/marketing-skill) |
+| **vps-ubuntu** | Server management, Docker, Nginx, SSL, fail2ban, BorgBackup | [vps-ubuntu-skill](https://github.com/arturseo-geo/vps-ubuntu-skill) |
+| **memory-persistence** | 6 memory patterns, session continuity, hooks auto-save | [memory-persistence-skill](https://github.com/arturseo-geo/memory-persistence-skill) |
+| **context-engineering** | Context window management, autocompaction, token budgets | [context-engineering-skill](https://github.com/arturseo-geo/context-engineering-skill) |
+| **token-optimizer** | Model routing, prompt caching, cost tracking (60-80% savings) | [token-optimizer-skill](https://github.com/arturseo-geo/token-optimizer-skill) |
+| **distribution** | 8-platform ebook distribution, cross-linking, royalty comparison | [distribution-skill](https://github.com/arturseo-geo/distribution-skill) |
 
 ## Installation
 
-Copy any skill folder into your Claude Code skills directory:
+### Install all skills at once
 
 ```bash
-# Install a single skill
-cp -r skills/seo-geo ~/.claude/skills/seo-geo
-
-# Install all skills
-cp -r skills/* ~/.claude/skills/
+git clone https://github.com/arturseo-geo/claude-code-skills.git
+cp -r claude-code-skills/skills/* ~/.claude/skills/
 ```
 
-Skills auto-trigger based on conversation context — no manual activation needed. When you discuss a topic that matches a skill's domain, Claude Code will automatically load and apply the relevant skill.
+### Install a single skill
+
+```bash
+cp -r claude-code-skills/skills/seo-geo ~/.claude/skills/seo-geo
+```
+
+### Install from standalone repos
+
+Each skill is also available as a standalone repo (see table above). This is useful if you want to star, fork, or contribute to a specific skill:
+
+```bash
+git clone https://github.com/arturseo-geo/seo-geo-skill.git ~/.claude/skills/seo-geo
+```
+
+## How Skills Work
+
+Skills auto-trigger based on conversation context — no manual activation needed. When you discuss SEO, Claude Code loads `seo-geo`. When you mention WordPress, it loads `wordpress`. Each skill has:
+
+- **SKILL.md** — core instructions, always loaded (~100 tokens trigger)
+- **references/** — deep-dive docs, loaded on demand to save context
+- **commands/** — slash commands (where applicable)
 
 ## Requirements
 
-- [Claude Code](https://claude.com/claude-code) CLI
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
 
-## Related Repos
+## About The GEO Lab
 
-- [ebook-publishing-skill](https://github.com/arturseo-geo/ebook-publishing-skill) — The standalone ebook-publishing skill with full changelog, issue templates, and detailed platform docs. The version in this collection is synced from that repo.
-- [seo-geo-skill](https://github.com/arturseo-geo/seo-geo-skill) — The standalone SEO/GEO skill repo.
-- [wordpress-skill](https://github.com/arturseo-geo/wordpress-skill) — The standalone WordPress skill with REST API, Gutenberg, SEO, WooCommerce, and performance references.
-- [mcp-wordpress-setup](https://github.com/arturseo-geo/mcp-wordpress-setup) — WordPress MCP server setup guide for Claude Code (companion repo).
+These skills were built and battle-tested while building 7 production SEO/GEO tools at [The GEO Lab](https://thegeolab.net) — a research platform focused on Generative Engine Optimisation. Every pattern, warning, and recommendation comes from real production experience.
 
-## Acknowledgments
+## Contributing
 
-These skills were built following the open-source best practice approach — reading community work for inspiration, writing original content, and crediting every source.
+PRs welcome across all skills. See individual skill repos for specific contribution guidelines.
 
-**Based on:**
-- [Agent Skills specification](https://github.com/anthropics/skills) by Anthropic (Apache 2.0)
+---
 
-**Inspired by community repos researched during development:**
-- [`smerchek/claude-epub-skill`](https://github.com/smerchek/claude-epub-skill) — Markdown→EPUB3 conversion with Python (MIT) — pattern used in ebook-publishing
-- [`coreyhaines31/marketingskills`](https://github.com/coreyhaines31/marketingskills) — marketing skill patterns (MIT)
-- [`kostja94/marketing-skills`](https://github.com/kostja94/marketing-skills) — marketing skill structure
-- [`AgriciDaniel/claude-seo`](https://github.com/AgriciDaniel/claude-seo) — SEO skill patterns
-- [`alirezarezvani/claude-skills`](https://github.com/alirezarezvani/claude-skills) — skill structure conventions (MIT)
-- [`wondelai/skills`](https://github.com/wondelai/skills) — skill architecture patterns
-- [`ThomasHoussin/Claude-Book`](https://github.com/ThomasHoussin/Claude-Book) — multi-agent fiction writing with EPUB/MOBI build
-
-All skill content is original writing. No files were copied or adapted from any source.
-
-## Author
-
-Built and maintained by **[Artur Ferreira](https://github.com/arturseo-geo)** @ **[The GEO Lab](https://thegeolab.net)**
-
-[thegeolab.net](https://thegeolab.net) · [@TheGEO_Lab](https://x.com/TheGEO_Lab) · [LinkedIn](https://linkedin.com/in/arturgeo) · [Reddit](https://www.reddit.com/user/Alternative_Teach_74/)
-
-## License
-
-[MIT](LICENSE)
+Built and maintained by **[Artur Ferreira](https://github.com/arturseo-geo)** @ **[The GEO Lab](https://thegeolab.net)** · [MIT License](LICENSE)
