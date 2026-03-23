@@ -5,9 +5,9 @@
 
 [![Works with Claude Code](https://img.shields.io/badge/Works%20with-Claude%20Code-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Skills](https://img.shields.io/badge/skills-12-orange)
+![Skills](https://img.shields.io/badge/skills-16-orange)
 
-12 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, and developer productivity. Each skill auto-triggers based on conversation context.
+16 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, analytics, operations, email marketing, and research. Each skill auto-triggers based on conversation context.
 
 ## Who This Is For
 
@@ -32,6 +32,10 @@
 | **context-engineering** | Context window management, autocompaction, token budgets | [context-engineering-skill](https://github.com/arturseo-geo/context-engineering-skill) |
 | **token-optimizer** | Model routing, prompt caching, cost tracking (60-80% savings) | [token-optimizer-skill](https://github.com/arturseo-geo/token-optimizer-skill) |
 | **distribution** | 8-platform ebook distribution, cross-linking, royalty comparison | [distribution-skill](https://github.com/arturseo-geo/distribution-skill) |
+| **analytics-reporting** | GSC + GA4 correlation, traffic analysis, performance reports, anomaly detection | [analytics-reporting-skill](https://github.com/arturseo-geo/analytics-reporting-skill) |
+| **command-center** | VPS service operations, PM2, BullMQ, Redis, health checks, debugging | [command-center-skill](https://github.com/arturseo-geo/command-center-skill) |
+| **email-marketing** | ConvertKit/Beehiiv/Substack, sequences, deliverability, segmentation, A/B testing | [email-marketing-skill](https://github.com/arturseo-geo/email-marketing-skill) |
+| **research** | Competitor intelligence, market sizing, trend analysis, source gathering | [research-skill](https://github.com/arturseo-geo/research-skill) |
 
 ## Installation
 
