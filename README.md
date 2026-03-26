@@ -4,9 +4,9 @@
 
 [![Works with Claude Code](https://img.shields.io/badge/Works%20with-Claude%20Code-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Skills](https://img.shields.io/badge/skills-17-orange)
+![Skills](https://img.shields.io/badge/skills-18-orange)
 
-17 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, analytics, operations, email marketing, research, and grounded fact-checking. Each skill auto-triggers based on conversation context.
+18 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, analytics, operations, email marketing, research, and grounded fact-checking. Each skill auto-triggers based on conversation context.
 
 ## Who This Is For
 
@@ -36,6 +36,7 @@
 | **email-marketing** | ConvertKit/Beehiiv/Substack, sequences, deliverability, segmentation, A/B testing | [email-marketing-skill](https://github.com/arturseo-geo/email-marketing-skill) |
 | **research** | Competitor intelligence, market sizing, trend analysis, source gathering | [research-skill](https://github.com/arturseo-geo/research-skill) |
 | **grounded-research** | Anti-hallucination mode — uncertainty admission, quote extraction, citation audit | [grounded-research-skill](https://github.com/arturseo-geo/grounded-research-skill) |
+| **content-audit** | Post-publication maintenance — compliance audit, freshness decay, LLM readability, re-test cadence | [content-audit-skill](https://github.com/arturseo-geo/content-audit-skill) |
 
 ## Installation
 
