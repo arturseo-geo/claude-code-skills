@@ -4,9 +4,9 @@
 
 [![Works with Claude Code](https://img.shields.io/badge/Works%20with-Claude%20Code-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Skills](https://img.shields.io/badge/skills-16-orange)
+![Skills](https://img.shields.io/badge/skills-17-orange)
 
-16 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, analytics, operations, email marketing, and research. Each skill auto-triggers based on conversation context.
+17 production-tested skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI — covering SEO, marketing, content creation, publishing, DevOps, AI agents, analytics, operations, email marketing, research, and grounded fact-checking. Each skill auto-triggers based on conversation context.
 
 ## Who This Is For
 
@@ -18,12 +18,12 @@
 ## Skills
 
 | Skill | What it teaches Claude Code | Standalone repo |
-|-------|---------------------------|-----------------|
+|-------|---------------------------|------------------|
 | **seo-geo** | Keyword research, SERP analysis, technical audits, backlink intelligence, AI visibility | [seo-geo-skill](https://github.com/arturseo-geo/seo-geo-skill) |
 | **ebook-publishing** | 11 platforms, HTML→PDF Puppeteer workflow, AI audiobooks, ISBN strategy | [ebook-publishing-skill](https://github.com/arturseo-geo/ebook-publishing-skill) |
 | **wordpress** | REST API, Gutenberg, WooCommerce, RankMath/Yoast, multisite, WP-CLI | [wordpress-skill](https://github.com/arturseo-geo/wordpress-skill) |
 | **agents** | ReAct, Plan-and-Execute, MCP, LangGraph, multi-agent orchestration | [agents-skill](https://github.com/arturseo-geo/agents-skill) |
-| **content-pipeline** | 6-agent content production pipeline with quality gates | [content-pipeline-skill](https://github.com/arturseo-geo/content-pipeline-skill) |
+| **content-pipeline** | 7-agent content production pipeline with GEO Quality Gate | [content-pipeline-skill](https://github.com/arturseo-geo/content-pipeline-skill) |
 | **content-creation** | Blogs, emails, social media, video scripts, repurposing workflows | [content-creation-skill](https://github.com/arturseo-geo/content-creation-skill) |
 | **marketing** | Campaigns, funnels, ad copy, StoryBrand/$100M Offers frameworks | [marketing-skill](https://github.com/arturseo-geo/marketing-skill) |
 | **vps-ubuntu** | Server management, Docker, Nginx, SSL, fail2ban, BorgBackup | [vps-ubuntu-skill](https://github.com/arturseo-geo/vps-ubuntu-skill) |
@@ -35,6 +35,7 @@
 | **command-center** | VPS service operations, PM2, BullMQ, Redis, health checks, debugging | [command-center-skill](https://github.com/arturseo-geo/command-center-skill) |
 | **email-marketing** | ConvertKit/Beehiiv/Substack, sequences, deliverability, segmentation, A/B testing | [email-marketing-skill](https://github.com/arturseo-geo/email-marketing-skill) |
 | **research** | Competitor intelligence, market sizing, trend analysis, source gathering | [research-skill](https://github.com/arturseo-geo/research-skill) |
+| **grounded-research** | Anti-hallucination mode — uncertainty admission, quote extraction, citation audit | [grounded-research-skill](https://github.com/arturseo-geo/grounded-research-skill) |
 
 ## Installation
 
@@ -73,7 +74,7 @@ Skills auto-trigger based on conversation context — no manual activation neede
 
 ## About The GEO Lab
 
-These skills were built and battle-tested while building 7 production SEO/GEO tools at [The GEO Lab](https://thegeolab.net) — a research platform focused on Generative Engine Optimisation. Every pattern, warning, and recommendation comes from real production experience.
+These skills were built and battle-tested while building 8 production SEO/GEO tools at [The GEO Lab](https://thegeolab.net) — a research platform focused on Generative Engine Optimisation. Every pattern, warning, and recommendation comes from real production experience.
 
 ## Contributing
 
